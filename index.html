@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>スカイリング</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,12 +26,15 @@
   --f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   color-scheme:light;
 }
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0;background:var(--sky);color:var(--ink);font-family:var(--f-body);
   overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   overscroll-behavior:none;-webkit-tap-highlight-color:transparent;
 }
+/* 画面の向きロック中でも横向きで遊べるよう、ゲーム全体をこの箱ごと回す */
+#app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;overflow:hidden}
 #stage{position:fixed;inset:0;touch-action:none}
 #stage canvas{display:block;width:100%;height:100%}
 
@@ -115,7 +123,11 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
 @media (max-width:440px){ .howto{grid-template-columns:1fr} .how{flex-direction:row;text-align:left} }
 @media (prefers-reduced-motion:reduce){ #toast.show{animation-duration:.01s;opacity:1} .timer.hurry{animation:none} }
 </style>
+</head>
+<body>
 
+
+<div id="app">
 <div id="stage" aria-label="ゲーム画面"></div>
 
 <div id="hud" hidden>
@@ -227,6 +239,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
 </div>
 
 <div class="overlay" id="fatal" hidden><div class="card"><h2>読み込めませんでした</h2><p class="note">3D表示用のライブラリを読み込めませんでした。通信状況を確認して、ページを開き直してください。</p></div></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -503,7 +516,13 @@ function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){
 
 /* ===== 入力：傾きセンサー ===== */
 const sensor = { g: null, n: null, live: false };
+// rot：ゲーム画面を自分で回している角度（0 / 90 / -90）。
+// スマホの「画面の向きのロック」がオンだと、横にしてもブラウザは縦のままなので、
+// そのときはゲーム全体を90度回して横向きの画面として見せる。
+let rot = 0, wantRot = 0, wantSince = 0, needCal = false;
 function screenAngle(){
+  if (rot === 90) return 90;
+  if (rot === -90) return 270;
   if (screen.orientation && typeof screen.orientation.angle === "number") return screen.orientation.angle;
   if (typeof window.orientation === "number") return window.orientation;
   return 0;
@@ -513,9 +532,17 @@ function onOrient(e){
   const D = Math.PI / 180, b = e.beta * D, gm = e.gamma * D;
   // 端末の座標で見た重力の向き（x：端末の右、y：端末の上）
   const dx = Math.sin(gm) * Math.cos(b), dy = -Math.sin(b);
+  // 縦のままのブラウザで横持ちしているとき、どちら向きに持っているかを重力で判断する
+  if (rot !== 0){
+    const want = dx < -0.5 ? 90 : dx > 0.5 ? -90 : rot;
+    const now = performance.now();
+    if (want !== wantRot){ wantRot = want; wantSince = now; }
+    if (want !== rot && now - wantSince > 400){ rot = want; layout(); needCal = true; }
+  }
   // 画面の向きに合わせて回す（Unity の compensateForScreenOrientation と同じ）
   const a = screenAngle() * D;
   sensor.g = { x: dx * Math.cos(a) - dy * Math.sin(a), y: dx * Math.sin(a) + dy * Math.cos(a) };
+  if (needCal){ needCal = false; calibrate(); }
   if (!sensor.live){ sensor.live = true; if (!sensor.n) calibrate(); updateModeLabel(); }
 }
 let sensorRequested = false;
@@ -552,15 +579,24 @@ const pointers = new Map();
 let stickMode = false, stickId = null;
 const stickVec = { x: 0, y: 0 };
 const stickEl = $("#stick"), knob = $("#knob");
-function inStick(x, y){
-  if (!stickMode) return false;
-  const r = stickEl.getBoundingClientRect();
-  return Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2)) < r.width / 2 + 24;
+// 指の位置（ブラウザの座標）を、回したゲーム画面の座標に直す
+function toGame(cx, cy){
+  if (rot === 90) return { x: cy, y: window.innerWidth - cx };
+  if (rot === -90) return { x: window.innerHeight - cy, y: cx };
+  return { x: cx, y: cy };
 }
-function moveStick(x, y){
+function stickCenter(){
   const r = stickEl.getBoundingClientRect();
-  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2;
-  let dx = (x - cx) / R, dy = (y - cy) / R;
+  return toGame(r.left + r.width / 2, r.top + r.height / 2);
+}
+function inStick(p){
+  if (!stickMode) return false;
+  const c = stickCenter();
+  return Math.hypot(p.x - c.x, p.y - c.y) < stickEl.offsetWidth / 2 + 24;
+}
+function moveStick(p){
+  const c = stickCenter(), R = stickEl.offsetWidth / 2;
+  let dx = (p.x - c.x) / R, dy = (p.y - c.y) / R;
   const m = Math.hypot(dx, dy); if (m > 1){ dx /= m; dy /= m; }
   stickVec.x = dx; stickVec.y = -dy;
   knob.style.transform = "translate(" + (dx * R * 0.7) + "px," + (dy * R * 0.7) + "px)";
@@ -569,12 +605,14 @@ stage.addEventListener("pointerdown", (e) => {
   if (state !== "play" && state !== "countdown") return;
   e.preventDefault();
   try { stage.setPointerCapture(e.pointerId); } catch(_){}
-  if (stickId == null && inStick(e.clientX, e.clientY)){ stickId = e.pointerId; moveStick(e.clientX, e.clientY); return; }
-  pointers.set(e.pointerId, e.clientX >= window.innerWidth / 2 ? 1 : -1);
+  const p = toGame(e.clientX, e.clientY);
+  if (stickId == null && inStick(p)){ stickId = e.pointerId; moveStick(p); return; }
+  pointers.set(e.pointerId, p.x >= GW / 2 ? 1 : -1);
 });
 stage.addEventListener("pointermove", (e) => {
-  if (e.pointerId === stickId){ moveStick(e.clientX, e.clientY); return; }
-  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, e.clientX >= window.innerWidth / 2 ? 1 : -1);
+  const p = toGame(e.clientX, e.clientY);
+  if (e.pointerId === stickId){ moveStick(p); return; }
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, p.x >= GW / 2 ? 1 : -1);
 });
 function endPointer(e){
   if (e.pointerId === stickId){ stickId = null; stickVec.x = stickVec.y = 0; knob.style.transform = ""; return; }
@@ -719,11 +757,28 @@ $("#recalBtn").addEventListener("click", () => { requestSensor(); calibrate(); t
 $("#recal2Btn").addEventListener("click", () => { calibrate(); resume(); toast("構え直したよ"); });
 $("#bestTitle").textContent = best;
 
-/* ===== 縦向きチェック ===== */
-function checkRotate(){
-  const portrait = isTouch && window.innerHeight > window.innerWidth;
-  show("#rotate", portrait);
-  if (portrait && (state === "play" || state === "countdown")) openPause();
+/* ===== 画面の向き：ブラウザが縦のままなら、ゲームを自分で横向きに回す ===== */
+const app = $("#app");
+let GW = window.innerWidth, GH = window.innerHeight;
+function layout(){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const portrait = isTouch && vh > vw;
+  if (!portrait) rot = 0;
+  else if (rot === 0) rot = 90;
+  if (rot === 0){
+    GW = vw; GH = vh;
+    app.style.transform = "none";
+  } else {
+    GW = vh; GH = vw;
+    app.style.transform = rot === 90
+      ? "translate(" + vw + "px,0) rotate(90deg)"
+      : "translate(0," + vh + "px) rotate(-90deg)";
+  }
+  app.style.width = GW + "px"; app.style.height = GH + "px";
+  renderer.setSize(GW, GH, false);
+  camera.aspect = GW / GH;
+  camera.fov = GW / GH < 1.2 ? 72 : 60;
+  camera.updateProjectionMatrix();
 }
 
 /* ===== 当たり判定 ===== */
@@ -921,14 +976,7 @@ function update(dt, t){
   camera.position.copy(camPos); camera.lookAt(camLook);
 }
 
-function resize(){
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.fov = w / h < 1.2 ? 72 : 60;
-  camera.updateProjectionMatrix();
-  checkRotate();
-}
+function resize(){ layout(); }
 window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", () => setTimeout(resize, 200));
 document.addEventListener("visibilitychange", () => { if (document.hidden && (state === "play" || state === "countdown")) openPause(); });
@@ -946,3 +994,6 @@ function frame(now){
 requestAnimationFrame(frame);
 })();
 </script>
+
+</body>
+</html>
