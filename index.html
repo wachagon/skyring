@@ -73,13 +73,21 @@ body{
 @keyframes blink{50%{opacity:0}}
 
 /* シャッター */
-#shutter{position:absolute;right:calc(env(safe-area-inset-right,0px) + 18px);top:50%;transform:translateY(-35%);width:78px;height:78px;border-radius:50%;border:0;padding:0;pointer-events:auto;cursor:pointer;
+#shutter{position:absolute;right:calc(env(safe-area-inset-right,0px) + 18px);top:50%;transform:translateY(-62%);width:78px;height:78px;border-radius:50%;border:0;padding:0;pointer-events:auto;cursor:pointer;
   background:conic-gradient(var(--accent) calc(var(--p,1)*360deg), rgba(255,255,255,.35) 0);box-shadow:0 3px 0 rgba(18,48,74,.25)}
 #shutter span{position:absolute;inset:7px;border-radius:50%;background:#fff;display:grid;place-items:center;font:800 12px var(--f-body);color:var(--ink)}
 #shutter:active span{background:#ffe3d6}
 #shutter.cool span{color:var(--muted)}
 
-/* 上下ゾーン（画面の下半分） */
+/* 上下ボタン（押しているあいだ上がる・下がる） */
+.vbtn{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:86px;height:86px;border-radius:50%;border:0;padding:0;pointer-events:auto;touch-action:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font:800 13px var(--f-body);background:var(--glass);box-shadow:0 3px 0 rgba(18,48,74,.2);-webkit-user-select:none;user-select:none}
+.vbtn span{font-size:22px;line-height:1}
+.vbtn.down{left:calc(env(safe-area-inset-left,0px) + 14px);color:var(--down)}
+.vbtn.up{right:calc(env(safe-area-inset-right,0px) + 14px);color:var(--accent-deep)}
+.vbtn.down.on{background:var(--down);color:#fff;transform:scale(1.06)}
+.vbtn.up.on{background:var(--up);color:#fff;transform:scale(1.06)}
+/* （旧）上下ゾーン */
 .half{position:absolute;top:50%;bottom:0;width:50%;opacity:0;transition:opacity .12s}
 .half.l{left:0;background:linear-gradient(0deg,rgba(47,134,207,.35),rgba(47,134,207,0) 80%)}
 .half.r{right:0;background:linear-gradient(0deg,rgba(255,122,61,.38),rgba(255,122,61,0) 80%)}
@@ -179,8 +187,6 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
 <div id="stage" aria-label="ゲーム画面"></div>
 
 <div id="hud" hidden>
-  <div class="half l" id="halfL"></div>
-  <div class="half r" id="halfR"></div>
   <div class="finder" id="finder"><i></i><i></i><i></i><i></i><b></b><span class="rec">REC</span></div>
   <div class="tl">
     <canvas id="mini" width="208" height="208" aria-hidden="true"></canvas>
@@ -191,7 +197,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
   <div class="timer" id="timer">120<small>秒</small></div>
   <div class="role" id="roleBadge" hidden></div>
   <div class="dizzy" id="dizzy" hidden><span>ゴツン！ふらふら…</span><div class="bar"><div class="fill" id="dizzyFill"></div></div></div>
-  <div class="lookhint" id="lookHint">画面の上半分をドラッグで見まわす</div>
+  <div class="lookhint" id="lookHint">画面をドラッグで見まわす</div>
   <div class="tr">
     <div class="btns">
       <button class="iconbtn" id="recalBtn" type="button">構え直す</button>
@@ -200,8 +206,8 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
     <div class="targets" id="targets"></div>
   </div>
   <button id="shutter" type="button" aria-label="シャッター"><span>パシャ</span></button>
-  <div class="zone l" id="zoneL">▼ さがる</div>
-  <div class="zone r" id="zoneR">あがる ▲</div>
+  <button class="vbtn down" id="downBtn" type="button" aria-label="さがる"><span>▼</span>さがる</button>
+  <button class="vbtn up" id="upBtn" type="button" aria-label="あがる"><span>▲</span>あがる</button>
   <div id="blind" hidden><div><b id="blindNum">20</b>目かくし中…<br><small>みんながかくれるのを待ってね</small></div></div>
   <div id="flash"></div>
   <div id="toast"></div>
@@ -221,12 +227,12 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
         <div>かたむける<small>前後左右に動く</small></div>
       </div>
       <div class="how">
-        <svg viewBox="0 0 72 48" aria-hidden="true"><rect x="4" y="6" width="64" height="36" rx="6" fill="#fff" stroke="#12304a" stroke-width="3"/><rect x="7" y="9" width="58" height="15" rx="3" fill="#12304a" opacity=".18"/><path d="M24 16h24M28 12l-4 4 4 4M44 12l4 4-4 4" fill="none" stroke="#12304a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div>上半分をドラッグ<small>見まわす</small></div>
+        <svg viewBox="0 0 72 48" aria-hidden="true"><rect x="4" y="6" width="64" height="36" rx="6" fill="#fff" stroke="#12304a" stroke-width="3"/><rect x="7" y="9" width="58" height="15" rx="3" fill="#12304a" opacity=".18"/><path d="M24 24h24M28 20l-4 4 4 4M44 20l4 4-4 4" fill="none" stroke="#12304a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div>画面をドラッグ<small>見まわす（どこでもOK）</small></div>
       </div>
       <div class="how">
-        <svg viewBox="0 0 72 48" aria-hidden="true"><rect x="4" y="6" width="64" height="36" rx="6" fill="#fff" stroke="#12304a" stroke-width="3"/><rect x="7" y="24" width="29" height="15" rx="3" fill="#2f86cf" opacity=".85"/><rect x="36" y="24" width="29" height="15" rx="3" fill="#ff7a3d"/><path d="M16 28h10l-5 7z" fill="#fff"/><path d="M45 35h10l-5-7z" fill="#fff"/></svg>
-        <div>下の左右をタッチ<small>左でさがる・右であがる</small></div>
+        <svg viewBox="0 0 72 48" aria-hidden="true"><circle cx="18" cy="26" r="13" fill="#2f86cf"/><circle cx="54" cy="26" r="13" fill="#ff7a3d"/><path d="M12 22h12l-6 9z" fill="#fff"/><path d="M48 30h12l-6-9z" fill="#fff"/></svg>
+        <div>▲▼ボタン<small>押しているあいだ上下</small></div>
       </div>
       <div class="how">
         <svg viewBox="0 0 72 48" aria-hidden="true"><circle cx="36" cy="24" r="17" fill="#ff7a3d"/><circle cx="36" cy="24" r="12" fill="#fff"/><circle cx="36" cy="24" r="5" fill="none" stroke="#12304a" stroke-width="2.5"/></svg>
@@ -241,7 +247,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
     </div>
     <p class="note">ひとりで遊んだときのさいこう記録 <b id="bestTitle">—</b></p>
     <p class="warn" id="sensorWarn" hidden>傾きセンサーが使えませんでした。Claudeのアプリの中ではセンサーが使えないので、GitHub PagesのURLをスマホのブラウザで開いて遊んでください。</p>
-    <p class="note">PCでは <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>で移動、<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>で見まわす（画面上半分のドラッグでも可）、<kbd>Space</kbd>・<kbd>E</kbd>で上、<kbd>Shift</kbd>・<kbd>Q</kbd>で下、<kbd>F</kbd>・<kbd>Enter</kbd>で撮影、<kbd>P</kbd>で一時停止。</p>
+    <p class="note">PCでは <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>で移動、<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>で見まわす（画面のドラッグでも可）、<kbd>Space</kbd>・<kbd>E</kbd>で上、<kbd>Shift</kbd>・<kbd>Q</kbd>で下、<kbd>F</kbd>・<kbd>Enter</kbd>で撮影、<kbd>P</kbd>で一時停止。</p>
   </div>
 </div>
 
@@ -261,6 +267,16 @@ h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
         <button type="button" id="look-slow" data-v="slow">ゆっくり</button>
         <button type="button" id="look-mid" data-v="mid">ふつう</button>
         <button type="button" id="look-fast" data-v="fast">はやい</button>
+      </div>
+      <span>視点</span>
+      <div class="seg" id="viewSeg">
+        <button type="button" id="view-third" data-v="third">三人称</button>
+        <button type="button" id="view-first" data-v="first">一人称</button>
+      </div>
+      <span>見まわす向き</span>
+      <div class="seg" id="lookInvSeg">
+        <button type="button" id="lookinv-0" data-v="0">ふつう</button>
+        <button type="button" id="lookinv-1" data-v="1">反対</button>
       </div>
       <span>左右</span>
       <div class="seg" id="invXSeg">
@@ -361,9 +377,14 @@ const CFG = {
   shotRange: 18,           // 撮れる距離
   frameX: 0.56, frameY: 0.6, // ファインダーの枠（画面中心から）
   slowMin: 0.25,           // ぶつかったとき、速さがここまで落ちる（ふだんの何倍か）
-  recover: 0.3             // 1秒あたりの回復量（約2.5秒でもとどおり）
+  recover: 0.3,            // 1秒あたりの回復量（約2.5秒でもとどおり）
+  oniSpeed: 1.15,          // 鬼だけ、加速と最高速度がこの倍率になる
+  glowAt: [60, 30],        // さがす時間の残りがこの秒数になったら、かくれている人が光る
+  glowTime: 5,             // 光っている秒数
+  tiltCurve: 0.8           // 1より小さいほど、少し傾けただけで速く動く
 };
-const SENS = { yurui: 0.55, futsuu: 0.4, binkan: 0.28 };
+// この量（重力の向きの変化）傾けると最高速。0.22 ≒ 約13度
+const SENS = { yurui: 0.34, futsuu: 0.22, binkan: 0.15 };
 const LOOK = { slow: 0.0045, mid: 0.0065, fast: 0.0095 };
 const HIDERS = [
   { name: "あか", color: 0xe8474b, css: "#e8474b" },
@@ -375,7 +396,7 @@ const HIDERS = [
 /* ===== 保存（この端末だけ） ===== */
 function load(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } }
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
-const settings = Object.assign({ sens: "futsuu", look: "mid", invX: false, invY: false }, load("skyring.settings", {}));
+const settings = Object.assign({ sens: "futsuu", look: "mid", invX: false, invY: false, view: "third", lookInv: false }, load("skyring.settings", {}));
 let best = load("dronekakurenbo.best", null);  // いちばん早くぜんいん撮れた秒数
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function seeded(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -388,7 +409,8 @@ stage.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xdfe9f0);
 scene.fog = new THREE.Fog(0xdfe9f0, 22, 60);
-const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 120);
+// near を小さくしすぎると奥の面の前後が判定しにくくなり、チカチカの原因になる
+const camera = new THREE.PerspectiveCamera(70, 1, 0.12, 120);
 camera.rotation.order = "YXZ";
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8a96a3, 0.85));
 const dl = new THREE.DirectionalLight(0xffffff, 0.45); dl.position.set(-10, 20, 6); scene.add(dl);
@@ -426,7 +448,20 @@ const FLOOR_PALETTE = [0xf5d9b8, 0xc9e3f2, 0xd8ecc7, 0xf2c9d4, 0xe7e2f5, 0xcfeee
   0xf1d0e0, 0xcfe7d2, 0xf7dcb4, 0xc8daf3, 0xf2e6c0, 0xdccbf0, 0xc2e4ec, 0xf3cfc0, 0xe0ecc4];
 const WALL_PALETTE = [0xe9eef3, 0xf6ecdf, 0xe8f1e6, 0xf3e6ee, 0xe6ebf6, 0xf4f0dc];
 const markerGeoX = new THREE.BoxGeometry(0.46, 0.12, 3.1), markerGeoZ = new THREE.BoxGeometry(3.1, 0.12, 0.46);
-const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+// 天井のあかり：丸くてあたたかい色（四角い穴と見まちがえないように）
+const lampGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.05, 24), lampRimGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.04, 24);
+const lampMat = new THREE.MeshBasicMaterial({ color: 0xffe7a8 });
+// 縦穴の目印：黄色と黒のしましまのふち＋上下にのびる光の柱
+const hazardMat = (function(){
+  const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+  const x = c.getContext("2d");
+  x.fillStyle = "#ffc531"; x.fillRect(0, 0, 64, 64);
+  x.fillStyle = "#1d2630";
+  for (let i = -64; i < 128; i += 22){ x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 11, 0); x.lineTo(i + 11 - 64, 64); x.lineTo(i - 64, 64); x.closePath(); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return new THREE.MeshLambertMaterial({ map: t, emissive: 0x332200, emissiveIntensity: 0.4 });
+})();
+const beamMat = new THREE.MeshBasicMaterial({ color: 0x8fe3ff, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false });
 const legsGeo = new THREE.BoxGeometry(0.12, 1, 0.12);
 const key3 = (f, i, j) => f + "-" + i + "-" + j;
 
@@ -552,17 +587,35 @@ function buildWorld(p){
     }
   }
   // ドアと窓のふち（見つけやすくする目印。当たり判定なし）
+  // 上のかべと面がぴったり重なるとチカチカするので、目印はかべの下面より6cm下まで出す
   openings.forEach((o) => {
     const g = new THREE.Mesh(o.isX ? markerGeoX : markerGeoZ, mat(0xff9a62));
-    g.position.set(o.p.x, o.top + 0.06, o.p.z); world.add(g);
+    g.position.set(o.p.x, o.top, o.p.z); world.add(g);
   });
-  // 天井のあかり（見た目だけ）。吹き抜けと縦穴の真下には付けない（通れるのが分かるように）
+  // 天井のあかり（見た目だけ）。丸い形で、部屋の中心から少しずらした2か所に付ける。
+  // 吹き抜けと縦穴のある天井には付けない（通れるのが分かるように）
   for (let f = 0; f < NF; f++) for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++){
     if (f < NF - 1 && isAtrium(i, j)) continue;
     if (plan.holes[key3(f + 1, i, j)]) continue;
-    const m = new THREE.Mesh(unitBox, lampMat);
-    m.scale.set(2.2, 0.06, 2.2); m.position.set(cellC(i), FLOORS[f].y1 - 0.04, cellC(j)); world.add(m);
+    [[-2.6, -2.6], [2.6, 2.6]].forEach(([ox, oz]) => {
+      const rim = new THREE.Mesh(lampRimGeo, mat(0x5b6470)); rim.position.set(cellC(i) + ox, FLOORS[f].y1 - 0.02, cellC(j) + oz); world.add(rim);
+      const m = new THREE.Mesh(lampGeo, lampMat); m.position.set(cellC(i) + ox, FLOORS[f].y1 - 0.065, cellC(j) + oz); world.add(m);
+    });
   }
+  // 縦穴の目印（当たり判定なし）：穴のふちを黄色と黒のしましまにして、上下の階を光の柱でつなぐ
+  Object.keys(plan.holes).forEach((k) => {
+    const [hf, hi, hj] = k.split("-").map(Number);
+    // 内側のふちは床の穴より3cm内側に出す（床の切り口と同じ面にならないように）
+    const cx = cellC(hi), cz = cellC(hj), h = 1.8 - 0.03, w = 0.35, y0 = FLOORS[hf].y0 - 0.46, y1 = FLOORS[hf].y0 + 0.1;
+    const rimBox = (x0, z0, x1, z1) => { const m = new THREE.Mesh(unitBox, hazardMat); m.scale.set(x1 - x0, y1 - y0, z1 - z0); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); world.add(m); };
+    rimBox(cx - h - w, cz - h - w, cx + h + w, cz - h);
+    rimBox(cx - h - w, cz + h, cx + h + w, cz + h + w);
+    rimBox(cx - h - w, cz - h, cx - h, cz + h);
+    rimBox(cx + h, cz - h, cx + h + w, cz + h);
+    const bottom = FLOORS[hf - 1].y0, top = FLOORS[hf].y1, hgt = top - bottom;
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, hgt, 24, 1, true), beamMat);
+    beam.position.set(cx, bottom + hgt / 2, cz); world.add(beam);
+  });
 
   // 家具：部屋の四すみに置く。部屋のまん中の十字（ドアへの通り道）はあける
   const frand = seeded(plan.furnSeed);
@@ -755,11 +808,27 @@ const alertTex = (function(){
   return new THREE.CanvasTexture(c);
 })();
 
+// 残り60秒・30秒で光る目印：かべ越しでも見える光の玉（かくれる側のドローンに付ける）
+const glowTex = (function(){
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(64, 64, 4, 64, 64, 62);
+  g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,240,140,.95)"); g.addColorStop(0.6, "rgba(255,190,60,.45)"); g.addColorStop(1, "rgba(255,170,40,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+})();
+function addGlow(mesh){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+  sp.renderOrder = 10; sp.visible = false; sp.scale.setScalar(4);
+  mesh.add(sp); mesh.userData.glow = sp;
+}
+
 /* ===== かくれるドローン（CPU） ===== */
 const hiders = HIDERS.map((h, idx) => {
   const mesh = makeDrone(h.color, 0.62);
   const ex = new THREE.Sprite(new THREE.SpriteMaterial({ map: alertTex, depthTest: false }));
   ex.scale.setScalar(0.55); ex.position.y = 0.9; ex.visible = false; mesh.add(ex);
+  addGlow(mesh);
   scene.add(mesh);
   return Object.assign({}, h, { id: "cpu" + idx, active: true, mesh, ex, pos: new THREE.Vector3(), node: null, goal: null, path: [], speed: 3, state: "hide", t: 0, alarm: 0, fleeing: false, alive: true, fall: 0 });
 });
@@ -910,10 +979,10 @@ window.addEventListener("keydown", (e) => {
   if ((e.code === "KeyP" || e.code === "Escape") && (state === "play" || state === "countdown")) openPause();
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
-window.addEventListener("blur", () => { keys.clear(); pointers.clear(); });
+window.addEventListener("blur", () => { keys.clear(); clearHeld(); });
 const k = (...c) => c.some((x) => keys.has(x));
 
-/* ===== 入力：タッチ（上半分＝見まわす、下の左右＝さがる・あがる） ===== */
+/* ===== 入力：タッチ（画面のどこでもドラッグ＝見まわす、▲▼ボタン＝あがる・さがる） ===== */
 const isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 const pointers = new Map();
 function toGame(cx, cy){
@@ -921,26 +990,24 @@ function toGame(cx, cy){
   if (rot === -90) return { x: window.innerHeight - cy, y: cx };
   return { x: cx, y: cy };
 }
-function classify(p){ return p.y < GH / 2 ? "look" : (p.x >= GW / 2 ? "up" : "down"); }
 stage.addEventListener("pointerdown", (e) => {
   if (state !== "play" && state !== "countdown") return;
   e.preventDefault();
   try { stage.setPointerCapture(e.pointerId); } catch(_){}
   const p = toGame(e.clientX, e.clientY);
-  pointers.set(e.pointerId, { kind: classify(p), x: p.x, y: p.y });
+  pointers.set(e.pointerId, { x: p.x, y: p.y });
 });
 stage.addEventListener("pointermove", (e) => {
   const ptr = pointers.get(e.pointerId);
   if (!ptr) return;
   const p = toGame(e.clientX, e.clientY);
-  if (ptr.kind === "look"){
-    if (state === "play"){
-      const s = LOOK[settings.look] || LOOK.mid;
-      yaw -= (p.x - ptr.x) * s;
-      pitch = clamp(pitch - (p.y - ptr.y) * s, -1.1, 1.1);
-      $("#lookHint").classList.add("fade");
-    }
-  } else ptr.kind = classify(p) === "look" ? ptr.kind : classify(p);
+  if (state === "play"){
+    // 「見まわす向き：反対」なら、指を動かした向きと逆に回る
+    const s = (LOOK[settings.look] || LOOK.mid) * (settings.lookInv ? -1 : 1);
+    yaw -= (p.x - ptr.x) * s;
+    pitch = clamp(pitch - (p.y - ptr.y) * s, -1.1, 1.1);
+    $("#lookHint").classList.add("fade");
+  }
   ptr.x = p.x; ptr.y = p.y;
 });
 const endPointer = (e) => pointers.delete(e.pointerId);
@@ -948,6 +1015,16 @@ stage.addEventListener("pointerup", endPointer);
 stage.addEventListener("pointercancel", endPointer);
 stage.addEventListener("contextmenu", (e) => e.preventDefault());
 $("#shutter").addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); shoot(); });
+// ▲▼ボタン：押しているあいだだけ上下（複数の指でも、それぞれ別に数える）
+const held = { up: new Set(), down: new Set() };
+function bindHold(el, key){
+  el.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch(_){} held[key].add(e.pointerId); });
+  const end = (e) => held[key].delete(e.pointerId);
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end); el.addEventListener("lostpointercapture", end);
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+bindHold($("#upBtn"), "up"); bindHold($("#downBtn"), "down");
+function clearHeld(){ held.up.clear(); held.down.clear(); pointers.clear(); }
 
 function readTiltRaw(){
   let x = 0, y = 0;
@@ -970,14 +1047,13 @@ function readTiltRaw(){
 function deadZone(v){
   const m = Math.hypot(v.x, v.y);
   if (m < CFG.deadZone) return { x: 0, y: 0 };
-  const s = Math.min(1, (m - CFG.deadZone) / (1 - CFG.deadZone)) / m;
+  // 手ブレの範囲をこえたら、少しの傾きでもしっかり進むようにカーブをかける
+  const s = Math.pow(Math.min(1, (m - CFG.deadZone) / (1 - CFG.deadZone)), CFG.tiltCurve) / m;
   return { x: v.x * s, y: v.y * s };
 }
 function readVertical(){
-  let up = k("Space", "KeyE"), down = k("ShiftLeft", "ShiftRight", "KeyQ");
-  pointers.forEach((p) => { if (p.kind === "up") up = true; if (p.kind === "down") down = true; });
-  $("#zoneR").classList.toggle("on", up); $("#halfR").classList.toggle("on", up);
-  $("#zoneL").classList.toggle("on", down); $("#halfL").classList.toggle("on", down);
+  const up = k("Space", "KeyE") || held.up.size > 0, down = k("ShiftLeft", "ShiftRight", "KeyQ") || held.down.size > 0;
+  $("#upBtn").classList.toggle("on", up); $("#downBtn").classList.toggle("on", down);
   return (up ? 1 : 0) - (down ? 1 : 0);
 }
 
@@ -1053,11 +1129,13 @@ function resetRound(pose){
   oniP.copy(pose.p); oniV.set(0, 0, 0); yaw = pose.yaw; pitch = 0; roll = 0;
   elapsed = 0; cool = 0; shots = 0; caught = 0; photos = []; shake = 0;
   speedMul = 1; bumpCd = 0; bumps = 0; menuOpen = false;
-  pointers.clear();
+  clearHeld();
   ["#title", "#result", "#pause", "#lobby"].forEach((id) => show(id, false));
   hud.hidden = false;
   $("#lookHint").classList.remove("fade");
   $("#shutter").hidden = role !== "oni"; $("#finder").hidden = role !== "oni";
+  setSelfMesh(); camDist = CAM_DIST;
+  glowT = 0; prevTL = Infinity;
   $("#dizzy").hidden = true;
   state = "countdown"; cd = 3; lastCd = 4;
   show("#cdHint", true);
@@ -1115,7 +1193,7 @@ function openPause(){
   $("#pauseTitle").textContent = net.on ? "メニュー（ゲームは止まりません）" : "一時停止";
   $("#quitBtn").hidden = false; $("#recal2Btn").hidden = false;
   $("#quitBtn").textContent = net.on ? "部屋からぬける" : "やめる";
-  pointers.clear(); show("#pause", true);
+  clearHeld(); show("#pause", true);
   if (net.on){ menuOpen = true; return; }
   pausedFrom = state; state = "paused";
 }
@@ -1156,7 +1234,7 @@ function shoot(){
   shootTargets().forEach((h) => {
     v.copy(h.pos).project(camera);
     if (v.z < -1 || v.z > 1 || Math.abs(v.x) > CFG.frameX || Math.abs(v.y) > CFG.frameY) return;
-    if (camera.position.distanceTo(h.pos) > CFG.shotRange) return;
+    if (oniP.distanceTo(h.pos) > CFG.shotRange) return;
     if (!clearLine(camera.position, h.pos)) return;
     hits.push(h);
   });
@@ -1205,6 +1283,8 @@ function bindSeg(id, get, set){
 }
 bindSeg("#sensSeg", () => settings.sens, (v) => { settings.sens = v; });
 bindSeg("#lookSeg", () => settings.look, (v) => { settings.look = v; });
+bindSeg("#viewSeg", () => settings.view, (v) => { settings.view = v; });
+bindSeg("#lookInvSeg", () => settings.lookInv ? "1" : "0", (v) => { settings.lookInv = v === "1"; });
 bindSeg("#invXSeg", () => settings.invX ? "1" : "0", (v) => { settings.invX = v === "1"; });
 bindSeg("#invYSeg", () => settings.invY ? "1" : "0", (v) => { settings.invY = v === "1"; });
 
@@ -1351,6 +1431,7 @@ function upsertRemote(id){
   if (cpu){ const c = CPU_COLORS[+id.slice(3)] || CPU_COLORS[0]; name = c.name; color = c.color; css = c.css; }
   else { const q = net.players.find((x) => x.id === id); const sc = slotColor(q ? q.slot : 0); name = q ? q.name : "?"; color = sc.color; css = sc.css; }
   const mesh = isOni ? makeOniDrone() : makeDrone(color, 0.62);
+  if (!isOni) addGlow(mesh);
   scene.add(mesh);
   r = { id, name, color, css, isOni, cpu, mesh, pos: new THREE.Vector3(), target: new THREE.Vector3(), yaw: 0, pitch: 0, alive: true, fall: 0, fresh: true };
   remotes.set(id, r);
@@ -1374,7 +1455,7 @@ function updateRemotes(dt, t){
     r.mesh.rotation.y = r.yaw;
     if (!r.alive) r.mesh.rotation.z += (0.35 - r.mesh.rotation.z) * Math.min(1, dt * 4);
     // 観戦中は鬼の目線になるので、鬼のドローン自体は隠す
-    r.mesh.visible = !(role === "out" && r.isOni);
+    r.mesh.visible = !(role === "out" && r.isOni && settings.view === "first");
   });
 }
 
@@ -1734,8 +1815,8 @@ function update(dt, t){
       const vin = readVertical();
       // 向いている方向を基準に、前後（tilt.y）と横（tilt.x）
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
-      // ぶつかったあとは加速も最高速度も speedMul 倍に落ちる
-      const mul = speedMul;
+      // ぶつかったあとは加速も最高速度も speedMul 倍に落ちる。鬼はさらに oniSpeed 倍
+      const mul = speedMul * (role === "oni" ? CFG.oniSpeed : 1);
       oniV.x += (fx * mv.y + rx * mv.x) * CFG.accel * mul * dt;
       oniV.z += (fz * mv.y + rz * mv.x) * CFG.accel * mul * dt;
       oniV.y += vin * CFG.vAccel * mul * dt;
@@ -1779,12 +1860,14 @@ function update(dt, t){
     const tEl = $("#timer");
     tEl.firstChild.nodeValue = String(Math.ceil(timeLeft));
     tEl.classList.toggle("hurry", phase === "hunt" && timeLeft <= 10);
+    if (phase === "hunt") CFG.glowAt.forEach((sec) => { if (prevTL > sec && timeLeft <= sec) startGlow(sec); });
+    prevTL = phase === "hunt" ? timeLeft : Infinity;
     const sh = $("#shutter");
     sh.style.setProperty("--p", String(cool > 0 ? 1 - cool / coolMax : 1));
     sh.classList.toggle("cool", cool > 0 || (net.on && phase !== "hunt"));
     drawMini();
   } else {
-    ["#zoneR", "#halfR", "#zoneL", "#halfL"].forEach((s) => $(s).classList.remove("on"));
+    $("#upBtn").classList.remove("on"); $("#downBtn").classList.remove("on");
   }
 
   // 自分の位置を送る（ホストは全員分をまとめて配る）
@@ -1808,18 +1891,106 @@ function update(dt, t){
     camera.position.set(cellC(plan.atrium[0]) + Math.sin(orbit) * 4.5, 9.5 + Math.sin(orbit * 0.7) * 3, cellC(plan.atrium[1]) + Math.cos(orbit) * 4.5);
     camera.rotation.set(-0.15, orbit + Math.PI * 0.85, 0);
   } else if (oniR){
-    // 撮られたあとは、鬼のカメラ目線で観戦
-    camera.position.copy(oniR.pos);
-    camera.rotation.set(oniR.pitch, oniR.yaw, 0);
+    // 撮られたあとは、鬼の目線（三人称なら鬼の後ろ）で観戦
+    placeCamera(oniR.pos, oniR.yaw, oniR.pitch, 0, dt);
   } else {
     const side = oniV.x * Math.cos(yaw) - oniV.z * Math.sin(yaw);
     roll += (-side / CFG.maxH * 0.07 - roll) * Math.min(1, dt * 6);
     shake = Math.max(0, shake - dt);
     const s = shake * 0.12;
-    camera.position.set(oniP.x + (Math.random() - 0.5) * s, oniP.y + (Math.random() - 0.5) * s, oniP.z);
     const wob = (1 - speedMul) * 0.1 * Math.sin(t * 7);
-    camera.rotation.set(pitch + wob * 0.4, yaw, roll + wob);
+    placeCamera(oniP, yaw, pitch + wob * 0.4, roll + wob, dt);
+    camera.position.x += (Math.random() - 0.5) * s; camera.position.y += (Math.random() - 0.5) * s;
   }
+  updateSelfMesh(t);
+  updateGlow(dt, t);
+}
+
+/* ===== 残り60秒・30秒：かくれている人が光る ===== */
+let glowT = 0, prevTL = Infinity;
+function startGlow(sec){
+  glowT = CFG.glowTime;
+  if (role === "oni") toast("あと" + sec + "秒！みんなが光った！");
+  else if (role === "hider") toast("あと" + sec + "秒！" + CFG.glowTime + "秒だけ光るよ！", "bad");
+  tone(1200, 1800, 0.18, "sine", 0.1); tone(1200, 1800, 0.18, "sine", 0.1, 0.25); buzz(80);
+}
+function updateGlow(dt, t){
+  glowT = Math.max(0, glowT - dt);
+  const on = glowT > 0 && (state === "play" || state === "paused");
+  // ふわふわ点滅しながら、終わりぎわは少しずつ消える
+  const pulse = 1 + 0.25 * Math.sin(t * 10), fade = Math.min(1, glowT / 0.8);
+  const apply = (mesh, alive) => {
+    const g = mesh && mesh.userData.glow;
+    if (!g) return;
+    g.visible = on && alive;
+    if (g.visible){ g.scale.setScalar(4 * pulse); g.material.opacity = fade; }
+  };
+  hiders.forEach((h) => apply(h.mesh, h.active && h.alive));
+  remotes.forEach((r) => apply(r.mesh, !r.isOni && r.alive));
+  apply(selfMesh, role === "hider");
+}
+
+/* ===== 三人称カメラと自分のドローン ===== */
+const CAM_DIST = 3.4;     // ドローンの後ろ何mから見るか
+let selfMesh = null, camDist = CAM_DIST;
+function setSelfMesh(){
+  if (selfMesh) scene.remove(selfMesh);
+  let color = 0xffffff;
+  if (role !== "oni" && net.on){ const q = net.players.find((x) => x.id === net.myId); color = slotColor(q ? q.slot : 0).color; }
+  selfMesh = role === "oni" ? makeOniDrone() : makeDrone(color, 0.62);
+  if (role !== "oni") addGlow(selfMesh);
+  selfMesh.rotation.order = "YXZ";
+  selfMesh.visible = false;
+  scene.add(selfMesh);
+}
+function updateSelfMesh(t){
+  if (!selfMesh) return;
+  const playing = state === "play" || state === "countdown";
+  const vis = playing && settings.view === "third" && role !== "out" && camDist > 0.9;
+  selfMesh.visible = vis;
+  if (!vis) return;
+  selfMesh.userData.blades.forEach((b, i) => { b.rotation.y += 0.7 * (i % 2 ? 1 : -1); });
+  // 進む向きに少しかたむける
+  const fv = -oniV.x * Math.sin(yaw) - oniV.z * Math.cos(yaw), sv = oniV.x * Math.cos(yaw) - oniV.z * Math.sin(yaw);
+  selfMesh.position.set(oniP.x, oniP.y + Math.sin(t * 3) * 0.03, oniP.z);
+  selfMesh.rotation.set(-fv / CFG.maxH * 0.3, yaw, -sv / CFG.maxH * 0.3);
+}
+// a から b へ進んだとき、最初に箱（壁・床・家具）に当たる位置（0〜1。当たらなければ1）
+function rayHitT(a, b){
+  const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+  let best = 1;
+  const minX = Math.min(a.x, b.x), maxX = Math.max(a.x, b.x), minY = Math.min(a.y, b.y), maxY = Math.max(a.y, b.y), minZ = Math.min(a.z, b.z), maxZ = Math.max(a.z, b.z);
+  for (const bx of boxes){
+    if (bx.x1 < minX || bx.x0 > maxX || bx.y1 < minY || bx.y0 > maxY || bx.z1 < minZ || bx.z0 > maxZ) continue;
+    let t0 = 0, t1 = 1, hit = true;
+    for (const [o, d, lo, hi] of [[a.x, dx, bx.x0, bx.x1], [a.y, dy, bx.y0, bx.y1], [a.z, dz, bx.z0, bx.z1]]){
+      if (Math.abs(d) < 1e-9){ if (o < lo || o > hi){ hit = false; break; } continue; }
+      let ta = (lo - o) / d, tb = (hi - o) / d;
+      if (ta > tb){ const tt = ta; ta = tb; tb = tt; }
+      if (ta > t0) t0 = ta; if (tb < t1) t1 = tb;
+      if (t0 > t1){ hit = false; break; }
+    }
+    if (hit && t0 < best) best = t0;
+  }
+  // 1階の床（箱ではないので別に調べる）
+  if (dy < 0 && b.y < 0.15){ const tg = (a.y - 0.15) / (a.y - b.y); if (tg < best) best = Math.max(0, tg); }
+  return best;
+}
+const camTmp = { dir: new THREE.Vector3(), piv: new THREE.Vector3(), want: new THREE.Vector3() };
+// 一人称：ドローンの位置から。三人称：ドローンの少し上・後ろから。壁があればその手前までカメラを寄せる
+function placeCamera(pos, yw, pt, rl, dt){
+  if (settings.view === "first"){ camera.position.copy(pos); camera.rotation.set(pt, yw, rl); return; }
+  const cp = Math.cos(pt);
+  const dir = camTmp.dir.set(-Math.sin(yw) * cp, Math.sin(pt), -Math.cos(yw) * cp);
+  const up = 0.8;
+  const piv = camTmp.piv.set(pos.x, pos.y + up, pos.z);
+  const tUp = rayHitT(pos, piv);
+  if (tUp < 1) piv.y = pos.y + Math.max(0, up * tUp - 0.12);
+  const want = camTmp.want.copy(piv).addScaledVector(dir, -CAM_DIST);
+  const d = clamp(CAM_DIST * rayHitT(piv, want) - 0.3, 0.25, CAM_DIST);
+  camDist = d < camDist ? d : camDist + (d - camDist) * Math.min(1, dt * 3);
+  camera.position.copy(piv).addScaledVector(dir, -camDist);
+  camera.rotation.set(pt, yw, rl);
 }
 
 window.addEventListener("resize", layout);
